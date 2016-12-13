@@ -30,7 +30,6 @@
 
 \usepackage[numbers,sort&compress]{natbib}
 
-%\usepackage{algorithm2e}
 \usepackage{caption}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
@@ -39,10 +38,6 @@
 \usepackage{multirow}
 \usepackage{indentfirst}
 \setlength{\parindent}{1em}
-
-\newfloat{procedure}{htbp}{loa}
-\floatname{procedure}{Procedure}
-
 \begin{document}
 
 
@@ -56,7 +51,6 @@ Yongzhen Huang, Liang Wang and Tieniu Tan are with National Laboratory of Patter
 Yi Yang is with Baidu Research. Email: yangyi05@baidu.com.}
 }
 %\markboth{Journal of \LaTeX\ Class Files,~Vol.~14, No.~8, November~2016}
-%{Cao \MakeLowercase{\textit{et al.}}: Feedback Neural Networks}
 \markboth{December~2016}
 {Cao \MakeLowercase{\textit{et al.}}: Feedback Neural Networks}
 \IEEEtitleabstractindextext{
@@ -71,12 +65,13 @@ Moreover, we design two quantitative experiments in terms of weakly supervised o
 \end{abstract}
 \vspace{0mm}
 \begin{IEEEkeywords}
-Feedback, neural pathway pruning, pattern recovering, weakly supervised localization, weakly supervised segmentation.
+Feedback, neural pathway pruning, neuron recovering, weakly supervised localization, weakly supervised segmentation.
 \end{IEEEkeywords}}
 \vspace{0mm}
 \maketitle
 \IEEEdisplaynontitleabstractindextext
 \IEEEpeerreviewmaketitle
+
 \section{Introduction}
 In recent years, convolutional neural networks (CNN) have made tremendous progress in a variety of vision tasks, including object classification~\cite{alexnet,googlenet,vgg,resnet}, localization~\cite{rcnn,ssd}, and semantic segmentation~\cite{segFCN,segCRFasRNN}.
 These tasks are usually treated as different problems and handled separately with different frameworks.
@@ -85,11 +80,9 @@ However, collecting a large amount of such data is often expensive and time-cons
 Therefore, it is ideal to localize and segment objects only when category labels are available, and this manner is naturally more like human learning.
 
 Recently, the studies~\cite{zeiler,zhou2014object} have shown that the convolutional units in CNNs only trained for the classification task have the potential to learn a part of semantic patterns like object parts or even the whole object.
-%In the training phase of these CNNs, these methods, category information is implicitly used as a kind of feedback signal in training.
-In the training phase of these CNNs, category information is implicitly used as a kind of feedback signal.
-In neurobiology, the Biased Competition Theory~\cite{desimone1995neural} claims that when searching for objects in a scene, the human visual cortex is enhanced by the top-down feedback after processing visual information in a bottom-up manner, and irrelevant neurons will be suppressed in feedback loops, thus leading to the selectivity in neuron activations.
-This top-down feedback mechanism is involved in a variety of visual perception tasks, including selective attention, scene segmentation, and the encoding and recall of learned information~\cite{gilbert2013top}.
-
+In these methods, category information is implicitly used as a kind of feedback signal in training.
+In neurobiology, the Biased Competition Theory~\cite{desimone1995neural} claims that when searching for objects in a scene, the human visual cortex is enhanced by the top-down stimuli after processing visual information in a bottom-up manner, and irrelevant neurons will be suppressed in the feedback loops, thus leading to the selectivity in neuron activations.
+This top-down feedback mechanism is involved in a variety of visual perception tasks, including selective attention, scene segmentation, and encoding and recalling learned information~\cite{kruger2013deep,douglas1995recurrent}.
 \begin{figure}[!tp]
 \centering
 \vspace{0mm}
@@ -101,14 +94,13 @@ This top-down feedback mechanism is involved in a variety of visual perception t
 \vspace{0mm}
 \centering
 \includegraphics[width = 1.0 \linewidth]{figure/introduction/simple_pipeline/sp.pdf}
-\caption{A simple pipeline for object localization and segmentation via the proposed Feedback CNN. Given an input image, we utilize Feedback CNN to generate target-relevant visualization and energy maps. Based on these maps, objects can be easily localized and segmented from the input image. Best viewed in color.}
-%we selectively prune the networks by back-propagating top-down information. After that, we can get target-relevant regions in visualization and energy maps, based on which object localization and segmentation can be easily achieved. Best viewed in color.}
+\caption{A simple pipeline for object localization and segmentation via the proposed Feedback CNN model. Given an input image and a high-level semantic stimulus, we selectively prune the networks by back-propagating top-down information. After that, we can get target-relevant regions in visualization and energy maps, based on which object localization and segmentation can be easily achieved. Best viewed in color.}
 \label{fig:sp}
 \end{figure*}
+
 Inspired by the aforementioned observations, we propose a Feedback CNN to implement the unified processing of object recognition, localization and semantic segmentation.
 As shown in Fig.~\ref{fig:pipeline}, we first acquire target-relevant neurons by selectively pruning the neural pathway according to the predicted class label, and then simultaneously recover the activated patterns learned by the selected neurons in the image space.
 In this way, the object of interest can be effectively captured in visualization and energy maps.
-
 Specifically, we introduce {\bf latent gate variables} to control the hidden neurons and formulate feedback as an optimization problem that is solved by our newly developed algorithms i.e., Feedback Selective Pruning (FSP) and Feedback Recovering (FR).
 FSP selects target-relevant neurons in hidden layers via back propagation pathways.
 FR restores visual information that falls in the receptive field of a given neuron.
@@ -117,27 +109,24 @@ In particular, we visualize several neurons selected by FSP in Fig.~\ref{fig:pip
 The visualization results indicate that the selected neurons are highly relevant to the target object and correspond to different parts of the object.
 As a consequence, Feedback CNN selects target-relevant and suppresses irrelevant neurons during the top-down inference, guiding the model to focus on the most salient image regions that are highly related to the given category label.
 
-Accordingly, Feedback CNN can reinforce a normal CNN trained for object classification to localize and segment interested objects from natural images, as illustrated in Fig.~\ref{fig:sp}.
-More specifically, a CNN classifier takes an image in Fig.~\ref{fig:sp}(a) as an input, then perform traditional feed-forward inference, as shown in Fig.~\ref{fig:sp}(b).
+Accordingly, Feedback CNN can force a normal CNN trained for object classification to localize and segment interesting objects from natural images, as illustrated in Fig.~\ref{fig:sp}.
+More specifically, a CNN classifier takes an image in Fig.~\ref{fig:sp}(a) as an input, then performs traditional feed-forward inference, as shown in Fig.~\ref{fig:sp}(b).
 After that, the inferred category, e.g., ``Train" for the first image, is set as the target for our feedback model in Fig.~\ref{fig:sp}(c), and thus only the neurons related to ``Train" will be activated.
-As a result, in Fig.~\ref{fig:sp}(d)(e), only the salient regions truly related with ``Train" are captured both in visualization and energy maps.
+As a result, in Fig.~\ref{fig:sp}(d)(e), only the salient regions related with ``Train" are captured both in the visualization and the energy maps.
 With the help of these maps, it is easy to localize and even segment objects without any strongly supervised model learning, as shown in Fig.~\ref{fig:sp}(f) and Fig.~\ref{fig:sp}(g), respectively.
 As a consequence, Feedback CNN provides an innovative way to integrate object recognition, localization and segmentation into a unified framework, which is more like human learning.
 
-%This work makes a big progress along our previous one~\cite{cao2015look}.
-A preliminary version of the work was reported in~\cite{cao2015look}.
-Compared with~\cite{cao2015look}, apart from more comprehensive description, analysis and experiments, this paper formulates two completely new algorithms with strict mathematical proofs for modeling feedback, which exhibits much stronger capability for task-specific neuron selection and object capturing.
-Based on the proposed new model, we can obtain energy maps with high signal-to-noise ratio, complete target description and clear object boundaries, which well paves the way for weakly supervised object localization and segmentation.
-In contrast, the model discussed in~\cite{cao2015look} suffers from noise and is confined to weakly supervised object localization only.
+This work makes a big progress along our previous one~\cite{cao2015look}.
+Most notably, the algorithms proposed in this paper are completely new, which are much more powerful for modeling feedback, based on which a new framework is developed.
+By a plenty of quantitative and qualitative analysis, we demonstrate that with these improvements the proposed Feedback CNN exhibits much stronger capability for task-specific neuron selection as well as capturing interesting objects.
+In particular, we apply this new framework for weakly supervised visual tasks for first time.
 
-%Most notably, the optimization problem in ~\cite{cao2015look} is further analyzed and the algorithms proposed in this paper are completely new, which are much more powerful for modeling feedback.
-%Particularly, a new approach for weakly supervised object localization and segmentation is also developed.
-%By a plenty of quantitative and qualitative analysis, we demonstrate that with these improvements the new Feedback CNN exhibits much stronger capability for task-specific neuron selection and object capturing, which greatly improves the application value of Feedback CNN.
 The main contributions of this paper are summarized as follows:
 1) We develop two new algorithms (i.e., FSP and FR mentioned above) to model feedback mechanism in CNN as two effective solutions of the defined optimization problem with elegant mathematic proofs.
-2) Via the visualization and energy maps, we demonstrate that the proposed Feedback CNN has the ability to select useful neurons related to expected objects or its parts.
+2) Via the visualization and energy maps, we demonstrate that the proposed Feedback CNN has the ability to select useful neurons related to interesting objects or its parts, as well as high signal-to-noise ratio, complete target description and clear object boundaries.
 3) We apply Feedback CNN for weakly supervised object localization and segmentation, respectively.
 The big improvement over the state-of-the-art methods verifies the value of Feedback CNN.
+
 
 \section{Related Work}
 
@@ -145,20 +134,20 @@ In this work, we will demonstrate that by selecting target-relevant hidden neuro
 Some studies closely related to this work are briefly discussed as follows.
 
 \subsection{Deep CNN}
-Recent years have witnessed the great success of deep neural networks in various computer vision tasks ~\cite{alexnet,googlenet,vgg,resnet,rcnn,ssd,segFCN,segCRFasRNN}.
-Particularly, deep CNN has achieved human level performance for object recognition~\cite{alexnet, googlenet, vgg, resnet, salakhutdinov2009deep, bengio2013representation}.
-It learns features and classifiers simultaneously from a large scale of training samples.
-The discriminative ability of deep CNN is greatly improved after a number of approaches being proposed, including Dropout~\cite{srivastava2014dropout}, PReLU~\cite{he2015delving}, and Batch Normalization~\cite{ioffe2015batch}.
+Recent years have witnessed the great success of deep CNN in various computer vision tasks~\cite{alexnet,googlenet,vgg,resnet,rcnn,ssd,segFCN,segCRFasRNN}.
+Particularly, deep CNN has achieved human level performance for object recognition~\cite{resnet}.
+It learns features and classifiers simultaneously from a large scale of training samples~\cite{alexnet, googlenet, vgg, resnet, salakhutdinov2009deep, bengio2013representation}.
+The discriminative ability of deep CNN is greatly improved after a number of approaches being proposed, including dropout~\cite{srivastava2014dropout}, PReLU~\cite{he2015delving}, and batch normalization~\cite{ioffe2015batch}.
 Moreover, there are considerable interests in enhancing deep CNN with greater capacity, in which the networks are generally designed to be deeper or wider~\cite{googlenet,resnet,wide}.
 The detailed analysis of CNN for the classification task~\cite{zhou2014object,zeiler} shows that semantic patterns can be learned from the given training data.
 
 All of these advances pave a way for constructing a feedback model in CNN.
 By introducing the feedback mechanism in those models, it is expected that we are capable of performing object localization and semantic segmentation easily under weakly supervised conditions.
 
-\subsection{Top-down Feedback}
-Top-down Feedback plays an important role in human vision system, e.g., objects localization and segmentation from complex backgrounds~\cite{gilbert2013top}, feature grouping~\cite{gilbert2007brain}, perceptual filling~\cite{bar2006top}, and tuning neurons' receptive fields and functional roles~\cite{gilbert2013top}.
+\subsection{Feedback Selection}
+Feedback selection plays an important role in human vision system, e.g., objects localization and segmentation from complex backgrounds~\cite{gilbert2013top}, feature grouping~\cite{gilbert2007brain}, perceptual filling~\cite{bar2006top}, and tuning neurons' receptive fields and functional roles~\cite{gilbert2013top}.
 Recently, some efforts have been made to embed feedback mechanism into deep neural networks.
-The convolutional latent variable models (CLVMs) in ~\cite{hu2015bottom} model feedback by treating units as latent variables in a global energy function.
+The convolutional latent variable models (CLVMs)in ~\cite{hu2015bottom} model feedback as latent variables.
 An earlier study is presented in Deep Boltzmmann Machines (DBM) for feature selection~\cite{wang2014attentional}.
 Meanwhile, Recurrent Neural Networks (RNN) and Long Short Term Memory (LSTM)~\cite{hochreiter1997long} are utilized to capture attention drifting in a dynamic environment and learn the feedback mechanism via reinforcement learning~\cite{stollenga2014deep,mnih2014recurrent}.
 On the other hand, Deep Boltzmmann Machines (DBM)~\cite{salakhutdinov2009deep,sohn2013learning} and Deconvolutional Neural Networks~\cite{zeiler} attempt to formulate feedback as a reconstruction process at the training stage.
@@ -171,7 +160,7 @@ In particular, the feedback mechanism is embedded into a deep classification mod
 The direct applications of the proposed Feedback CNN are weakly supervised object localization and segmentation, and thus in this subsection we introduce some representatives in these two fields.
 
 Many studies are developed for weakly supervised object localization using CNN~\cite{deepinside,sohn2013learning,oquab2015object,bergamo2014self,zhou2015learning,zhang2016top}.
-A technique for self-teaching object localization is proposed in~\cite{bergamo2014self}.
+To localize objects, a technique for self-teaching object localization is proposed in~\cite{bergamo2014self}.
 The approaches proposed in~\cite{sohn2013learning,oquab2015object} use global average pooling and max pooling to generate class-specific energy maps, and localize objects based on these maps.
 The work of~\cite{deepinside} localizes objects by segmenting objects in an image based on the noisy energy map generated by class specified gradients.
 The approach in~\cite{zhou2015learning} needs re-training the recognition model with the average pooling layer.
@@ -181,9 +170,10 @@ The energy maps generated by~\cite{zhou2015learning} and~\cite{zhang2016top} mai
 Recently, some remarkable approaches have been proposed for weakly-supervised semantic segmentation~\cite{bearman2015s,kim2016scale,ccnn,segcvpr15,papandreou2015weakly}.
 The approaches presented in~\cite{bearman2015s} and~\cite{segcvpr15} adopt different pooling strategies to train deep networks from the viewpoint of multiple instance learning.
 Both CCNN~\cite{ccnn} and EM-Adapt~\cite{papandreou2015weakly} develop a self-training framework and enforce the consistency between the per-image annotation and the predicted segmentation masks by different constraints.
-
 Different from these methods, the proposed Feedback CNN in this paper can simultaneously perform object recognition, localization and semantic segmentation.
-Under the same weakly supervised settings, we merely need to train a classification model and then perform object localization and semantic segmentation without any strongly supervised model learning.
+Under the same weakly supervised settings, we merely need to train a classification model and then perform object localization and semantic segmentation based on the energy maps generated by the feedback selection mechanism.
+More details will be provided in the next section.
+
 
 \section{Feedback CNN}
 
@@ -191,14 +181,14 @@ Under the same weakly supervised settings, we merely need to train a classificat
 \subsubsection{Problem Description}
 %It is generally known that object recognition, localization and segmentation are strongly correlated to each other.
 %In this section, we demonstrate that it is technically feasible to integrate these three tasks into one framework.
-For easy understanding, we use a figure to explain the meaning of the main variables in the definition.
 \begin{figure}[!tp]
 \centering
 \includegraphics[width = 0.85 \linewidth]{figure/introduction/idea/idea.pdf}
-\caption{Pathway pruning. (a) Neural pathways between two neurons. (b) The neural pathways are abstracted as a CP. (c) All CPs between input pixels and a target neuron. (d) Selectively prune the CPs. (e) The preserved target-related CPs. (f) Object localization and segmentation by the preserved CPs.}
+\caption{Pathway selection. (a) Neural pathways between two neurons. (b) The neural pathways are abstracted as a CP. (c) All CPs between input pixels and a target neuron. (d) Selectively pruned CPs. (e) The preserved target-related CPs. (f) The results of object localization and segmentation.}
 \label{fig:idea} %% label for entire figure
 \end{figure}
 
+For easy understanding, we use a figure to explain the meaning of the main variables in the definition.
 As shown in Fig.~\ref{fig:idea}(a)(b), every pixel in the input image initiates several neural pathways to a high-level semantic neuron $F$ which represents a face, and all these pathways can be abstracted as a connecting pathway (CP) between a pixel and $F$.
 Consequently, all pixels of the input image will be connected to $F$ by their own CPs, as shown in Fig.~\ref{fig:idea}(c).
 Let $P$ denote the set of all these CPs.
@@ -210,28 +200,29 @@ Then the set $P$ can be divided into two subsets $T$ and $B$ according to $R$, a
 The problem is to find a rule $R$, s.t. $P=T\bigcup B \ and \ T\bigcap B=\emptyset$.
 }
 
-If we find the rule $R$ and wipe out all the connections in $B$, as demonstrated in Fig.~\ref{fig:idea}(d) and (e), the target object can be localized and segmented in a top-down manner, which explains the technical feasibility of integrating object recognition, localization and segmentation together.
+If we find the rule $R$ and wipe out all the connections in $B$, as demonstrated in Fig.~\ref{fig:idea}(d), the target object can be localized and segmented in a top-down manner, which explains the technical feasibility of integrating object recognition, localization and segmentation together.
 To conclude, a strategy is required to selectively modulate the bottom-up pathways in neural networks according to the target semantic neuron.
 %height=0.7\linewidth
 
 In this paper, feedback serves as the rule R for the neural pathway selection.
 Specifically, we introduce latent gate variables and build feedback connections to control the hidden neurons, as demonstrated in Fig.~\ref{fig:feedback}.
 Neural pathways pruning is accordingly transferred to neuron selection.
-Fig.~\ref{fig:feedback}(c) demonstrates that feedback connections are established from top ``goal" neurons to all the additional gates.
-In addition to the bottom-up inference in traditional convolutional neural networks, Feedback CNN infers about the status of all the additional gates according to the ``goal" of the network in several feedback loops.
+Fig.~\ref{fig:feedback}(c) demonstrates that feedback connections are established from top ``goal" neurons to all latent gate variables.
+In addition to the bottom-up inference in traditional convolutional neural networks, Feedback CNN infers about the status of all the latent gate variables according to the ``goal" of the network in several feedback loops.
 After the feedback selection, irrelevant hidden neurons will be suppressed which means that lots of non-target connecting pathways are clipped.
 Finally, we can obtain the information of objects in a top-down propagation.
 
+%\subsection{Mathematical Modeling}
 \subsubsection{Problem Formulation}
 CNNs usually consist of several stacked feed-forward layers, including the convolutional layer, the rectified linear units (ReLU) layer, the max pooling layer and some other nonlinear layers like the soft-max layer and the sigmoid layer.
 The ReLU and the max pooling layers can be interpreted as ``gates" attached to the output of convolutional layers and the status of these ``gates" are actually controlled by the input information.
 The network expresses patterns during the feed-forward phase in a bottom-up manner.
-For each output neuron in the convolutional layer, as long as the pattern lying on its receptive field is matched with its learned pattern and the similarity is stronger than its neighbors, the corresponding ``gates" in the subsequent ReLU and max pooling layers will be opened.
+For each output neuron in the convolutional layer, as long as the pattern lying on its receptive field is matched with its learned pattern and the similarity is stronger than its neighbors, the corresponding ``gates" in the succedent ReLU and max pooling layers will be opened.
 When targeting at a particular semantic label, these activated neurons could be either helpful or harmful, and they potentially involve too much noise and irrelevant information.
 So it is reasonable to put additional gates on the output of the ReLU and max pooling layers to further turn off those activated but irrelevant neurons.
-In particular, these new gates are determined by both bottom-up feedforward information and top-down feedback information.
+In particular, these new gates are determined by both bottom-up feed-forward information and top-down feedback information.
 
-Mathematically, we formulate such feedback mechanism as an optimization problem by introducing additional gate variables $Z$.
+We formulate such feedback mechanism as an optimization problem by introducing additional gate variables $Z$.
 Given an image $I$ and a CNN with parameters $W$, we denote the score of the target neuron as $S$ and the mapping function from $I$ to $S$ as $f(I)$.
 As mentioned above, the convolutional units are already controlled by ReLU and max pooling gates, thus we put additional gates $Z$ on the top of each ReLU neuron and max pooling neuron.
 
@@ -239,8 +230,8 @@ As mentioned above, the convolutional units are already controlled by ReLU and m
 \vspace{0mm}
 \centering
 \includegraphics[width = 0.9 \linewidth,height=0.45\linewidth]{figure/introduction/feedback/feedback_b.pdf}
-\caption{Building the feedback connection. (a) An original CNN. (b) Put additional gates on the hidden neurons.
-(c) Build feedback connections from the target neuron to all the additional gates.}
+\caption{Building the feedback connection. (a) An original CNN. (b) Put gates on each of the hidden neurons.
+(c) Build feedback connections between the target neuron and all the gate variables.}
 \label{fig:feedback} %% label for entire figure
 \end{figure}
 
@@ -257,6 +248,7 @@ The optimization problem is formulated as:
 This leads to an integer programming problem, which is NP-hard with the current deep net architecture.
 Fortunately, locally optimal solutions can be derived for this problem when $f(I,Z)$ is linearly approximated.
 
+%\subsection{Linear Approximation}
 \subsubsection{Linear Approximation}
 It is well known that CNN is a nonlinear mapping function, since it has some nonlinear layers such as the ReLU layer, the max pooling layer and so on.
 However, given an input image $I_0$, we can approximate the nonlinear CNN around $I_0$ in the input space with a linear function, denoted as $F(I_0)$.
@@ -460,6 +452,7 @@ Accordingly, we first prove that ${S_N \leq S_{N-1}}$, then demonstrate that ${S
       \end{aligned}
     \end{equation}
    The score $S$ will keep increasing until convergence.
+
 We take Fig.~\ref{fig:frfsp} as an example for explanation.
 As shown in the first row of Fig.~\ref{fig:frfsp}, we embed the proposed FR algorithm into the VggNet~\cite{vgg} pre-trained on the ImageNet 2012 data set.
 Given the input image in Fig.~\ref{fig:frfsp}(a) which contains an elephant and a zebra, we run FR for these two categories, respectively.
@@ -492,9 +485,10 @@ More detailed analysis will be provided in the discussion section.
 \subfigure[FSP for zebra]{
 \label{fig:fsp:f} %% label for second subfigure
 \includegraphics[width=1.05in,height=1in]{figure/model/fsp_zebra.pdf}}
-\caption{Results by running the FR and FSP for different targets respectively. (a) The input image for FR. (b)(c) Output maps via running FR for elephant and zebra respectively. (d) The same input image for FSP. (e)(f) Output maps via running FSP for elephant and zebra respectively. Best viewed in color.}
+\caption{Results generated by running the FR and the FSP algorithms for different targets respectively. (a) The input image for FR. (b)(c) The output maps generated by running FR  for elephant and zebra respectively. (d) The same input image for FSP. (e)(f) The output maps generated by running FSP for elephant and zebra respectively. Best viewed in color.}
 \label{fig:frfsp} %% label for entire figure
 \end{figure}
+
 \subsubsection{Feedback Selective Pruning}
 The fact that FR has weak discriminative ability by modulating SWs during its optimization reminds us to determine the additional gates $Z$ by unchanged SWs.
 With this assumption, we modulate the input of each hidden neuron to maximize the target $S$.
@@ -522,7 +516,7 @@ In particular, we optimize all the gates $Z$ layer-by-layer in a bottom-up order
          \Else
          \State Fix\ $z_{k}^l,z_{k}^{2},\ldots,z_{k}^{l-1}$
          \State $S_{l-1}=\begin{matrix}\sum_{k'}^{l-1}\alpha_{k'}^{l-1}x_{k'}'^{l-1} \end{matrix}$
-         \State  and also,
+         \State In the other side,
          \State $S_{l-1}=\begin{matrix}\sum_{k}^{l}\alpha_{k}^{l}x_{k}^{l} \end{matrix}$
          \State $x_{k}^l=relu(\begin{matrix}\sum_{k'}^{l-1} w_{k'}^{l-1} z_{k'}^{l-1} x_{k'}'^{l-1} \end{matrix})$
          \State $\alpha_{k}^l=\frac{\partial S_{l-1}}{\partial x_{k}^{l}}$
@@ -547,7 +541,7 @@ We first prove that ${S_1 \leq S_{2}}$, and then illustrate ${S_l \leq S_{l+1}}$
       \end{array}
     \end{equation}
     \\
-   $x_{k}^1$  is an output of a ReLU neuron in layer 1, so $x_{k}^1 \geq 0$.\\
+   $x_{k}^1$  is an output of an ReLU neuron in layer 1, so $x_{k}^1 \geq 0$.\\
    Note that
     \begin{equation}
       \begin{array}{*{20}{c}}
@@ -597,7 +591,7 @@ We first prove that ${S_1 \leq S_{2}}$, and then illustrate ${S_l \leq S_{l+1}}$
          {\hat{x}_{k}^{l+1}=relu(\begin{matrix}\sum_{k'}^{l} w_{k'}^{l} z_{k'}^{l} x_{k'}'^{l} \end{matrix})}
       \end{array}
     \end{equation}
-    and thus, \ $\hat{x}_{k}^{l+1} \geq 0$\\
+    and thus \ $\hat{x}_{k}^{l+1} \geq 0$\\
     Because
     \begin{equation}
       \begin{aligned}
@@ -623,13 +617,13 @@ We first prove that ${S_1 \leq S_{2}}$, and then illustrate ${S_l \leq S_{l+1}}$
 The target $S$ will keep increasing until convergence.
 
 As shown in Fig.~\ref{fig:frfsp}, we apply the FSP for elephant and zebra using the same input image and VggNet, respectively.
-
 Fig.~\ref{fig:frfsp}(e) and (f) illustrate the results.
-It is obvious that compared with the FR algorithm, the FSP algorithm has much more powerful discriminative ability between different target objects.
-The salient regions in Fig.~\ref{fig:fsp:e} and Fig.~\ref{fig:fsp:f} are focused on different targets separately, although the visualization maps contains incomplete objects.
+It is obvious that compared with the FR algorithm, the FSP algorithm has much more discriminative ability between different target objects.
+The salient regions in Fig.~\ref{fig:fsp:e} and Fig.~\ref{fig:fsp:f} are  different targets separately.
 Hence, the FSP algorithm has the capacity to select neurons in deep CNN according to a pre-defined label, and that is why we call this algorithm as Feedback Selective Pruning.
 The main reason for these results is that the states of gate variables are determined by the SWs of hidden neurons and the inputs are modified instead of the SWs during the optimization process.
 We will further discuss this in the next section.
+
 \subsection{Discussion}
 As mentioned before, hidden neurons in a deep CNN are represented for particular patterns in the image space~\cite{zeiler,deepinside,zhou2014object}.
 Also we show, in Equation~(3), that a hidden neuron denoted by $x_{ijc}^l$ can represent a particular pattern which is expressed by the weights of pathways between the related input pixels and this neuron.
@@ -637,12 +631,12 @@ In particular, the strength of $x_{ijc}^l$ is the similarity measurement when gi
 
 To maximize the target score $S$, the FR algorithm updates SWs layer-by-layer from the top to the bottom.
 During optimization, the additional gate $z_{ijc}^l$ for $x_{ijc}^l$ is determined by the modified $\hat{\alpha}_{ijc}^l$ via $\delta(\hat{\alpha}_{ijc}^l)$ instead of original $\alpha_{ijc}^l$.
-As a consequence, the updating of $\alpha_{ijc}^l$ destroys the discriminative ability of the target neuron to judge whether a pattern is beneficial to semantic information it represents.
-But interestingly, the FR algorithm provides a good method to visualize the content in the receptive field of a neuron, which can be a very good supplement to the FSP for generating practical energy maps.
+As a consequence, updating $\alpha_{ijc}^l$ destroys the discriminative ability of the target neuron to judge whether a pattern is beneficial to semantic information it represents.
+But interestingly, the FR algorithm provides a good method to visualize the content in the receptive field of a neuron.
 
 In contrast, the FSP algorithm updates the activations of hidden neurons to maximize the target score $S$ from the bottom to the top layer.
 For a particular neuron $x_{ijc}^l$, its gate status is determined by $\delta(\alpha_{ijc}^l)$, although the value of $x_{ijc}^l$ may have changed during updating $x_{ijc}^{l-1}$.
-From another point of view, $S$ can be reinterpreted in the following way:
+Moreover, $S$ can be reinterpreted in the following way:
 \begin{equation}
 \begin{aligned}
   S=\frac{1}{N}\sum_{l=1}^N\begin{matrix}\sum_{ijc}^l \alpha_{ijc}^l x_{ijc}^l \end{matrix}
@@ -655,20 +649,19 @@ This will change the values of the preserved $x_{ijc}^l$, but it will not change
 \vspace{0mm}
 \centering
 \includegraphics[width = 1 \linewidth,height =1 \linewidth]{figure/model/vis.pdf}
-\caption{Results generated by combining both the FSP and FR. (a) Input images. (b)(c) Merged energy maps and visualization maps by running FR separately on neurons selected by FSP. (d)(e) Energy and visualization maps by running FR simultaneously on neurons selected by FSP. Best viewed in color.}
+\caption{More results generated by Feedback CNN. (a) Input images. (b) and (c) Merged energy maps and visualization maps by running FR separately on neurons selected by FSP. (d) and (e) Energy and visualization maps by running FR simultaneously on neurons selected by FSP. Best viewed in color.}
 \label{fig:vis}
 \end{figure}
-The FSP naturally offers a good way to seek patterns closely related to particular target objects.
+The FSP offers a good way to seek patterns closely related to particular target objects.
 
 Because neither FR nor FSP can provide a global optimum solution, it is difficult to obtain perfect visualization and energy maps only by either of them.
-Fortunately, combined with the advantages of both, the proposed Feedback CNN can produce impressive results.
+Fortunately, combined with the advantages of both, the proposed Feedback CNN can produce  impressive results.
 In Feedback CNN, the FSP algorithm is utilized to select target-relevant neurons, and the FR algorithm is employed to reconstruct the target object in the image space.
-Fig.~\ref{fig:vis} presents some specific examples.
+Fig.~\ref{fig:vis} presents more results.
 Specially, Fig.~\ref{fig:vis}(b) and (c) are generated by running FR on selected neurons separately and merging the energy and the visualization maps together.
 Fig.~\ref{fig:vis}(d) and (e) are obtained by running FR on selected neurons simultaneously which is much more efficient.
-As can be seen, objects are captured by Feedback CNN even when they are hidden in cluttered backgrounds.
-And neurons related with the target objects will be selected but irrelevant neurons will be turned off.
-Note that this kind of selectivity occurs in every hidden layer.
+As can be seen, objects are captured by Feedback CNN even when they are hidden in cluttered backgrounds, and neurons related with the target objects will be selected but irrelevant neurons will be turned off.
+%This kind of selectivity occurs in every hidden layer.
 %It is worth noting that a deep CNN is difficult to be trained perfectly, and noisy patterns may have positive SW.
 %Therefore, it is practical to set a threshold to determine the states of gate variables by the mean value of all SWs in a layer.
 
@@ -708,16 +701,16 @@ It should be noted that since the FR algorithm is like a kind of image reconstru
 \label{fig:iteration} %% label for entire figure
 \end{figure}
 
-In order to verify our theoretical analysis described in Section 3 that the score of the target neuron would keep increasing until convergence when running the FSP algorithm, we specially visualize the iterative process of the FSP algorithm here.
-For experimental purposes, the VggNet (16 layers)~\cite{vgg}, which is obtained from Caffe~\cite{caffe} Model Zoo website and pre-trained with ImageNet 2012 training set, is fine-tuned on the Pascal VOC2012 data set.
+In order to verify our theoretical analysis described in Section 3 that the score of the target neuron would keep increasing until convergence when running the FSP algorithm, we visualize the iterative process of the FSP algorithm here.
+For experimental purposes, the VggNet (16 layers)~\cite{vgg}, which is obtained from Caffe~\cite{caffe} model zoo and pre-trained with ImageNet 2012 training set, is fine-tuned on the Pascal VOC2012 data set.
 
-Firstly, as shown in Fig.~\ref{fig:iteration}(a), (b) and (c), given the input image, the FSP algorithm is applied respectively on two neurons which represent the categories of ``dog" and ``cat" in the last fully connected layer named as ``fc8" in the VggNet.
+As shown in Fig.~\ref{fig:iteration}(a), (b) and (c), given the input image, the FSP algorithm is applied respectively on two neurons which represent the categories of ``dog" and ``cat" in the last fully connected layer named as ``fc8" in the VggNet.
 The scores of all the 20 neurons in ``fc8", corresponding to the 20 classes of Pascal VOC2012, are recorded during the iteration procedure.
 The iteration curve for category ``cat" is plotted with the red line, ``dog" with the green line, and other 18 classes with the blue lines.
 As can be seen, all the iterative procedure converge after about 5 iterations.
 And the scores of the target neuron keep increasing until convergence, while the scores of other classes are suppressed even if the corresponding objects are presented in the image.
 The same results happen when given an image contains a bus and several cars, as shown in Fig.~\ref{fig:iteration}(d), (e) and (f).
-These results prove that FSP will converge to a local optimum efficiently, and effectively increase the score of the target neuron.
+These results prove that FSP will converge to a local optimum efficiently, and increase the score of the target neuron effectively.
 
 Furthermore, the FSP algorithm is applied on the ImageNet 2012 classification validation set which contains 50000 images.
 The ground-truth label of each image is set as the target for the feedback model, and the scores of 5 iterations for all images are recorded.
@@ -782,7 +775,7 @@ More analysis will be presented in the next experiment.
 \label{fig:effect:n} %% label for second subfigure
 \includegraphics[width=0.95in,height=0.85in]{figure/experiments/effectiveness/sumbottle.pdf}}
 \centering
-\caption{Filter selection. Given the input images like (a) and (e), the FSP algorithm is run for different objects in these images, and we select top 5 channels for each target object according to the maximum scores of 512 channels in the ``conv5\_2" layer. Those 5 channels correspond to 5 filters. We feed the images of 20 different classes of Pascal VOC2012 validation set to CNN, and calculate the maximum and mean scores of those 5 filters corresponding to the images of different classes. The first row reports the maximum scores curve and the second row reports the mean scores curve. The filters selected by FSP  well respond to the corresponding class images. For example, the selected filters for ``person" have much higher responses to the images from the category ``person". Best viewed in color. }
+\caption{Filter selection. Given input images like (a) and (e), the FSP algorithm is run for different objects in these images, and we select top 5 different channels for each target object according to the maximum scores of 512 channels in the ``conv5\_2" layer. Those 5 channels correspond to 5 filters. We feed the images of 20 different classes of Pascal VOC2012 validation set to CNN, and calculate the maximum and mean scores of those 5 filters corresponding to the images of different classes. The first row reports the maximum scores curve and the second row reports the mean scores curve. The filters selected by FSP well respond to the corresponding class images. For example, the scores of selected filters for cars are much higher than other classes when feeding the images of cars to CNN. Best viewed in color.}
 \label{fig:effect} %% label for entire figure
 \end{figure*}
 
@@ -797,41 +790,41 @@ This layer has 512 filter kernels, indicating that it may express 512 patterns r
 \vspace{0mm}
 \centering
 \includegraphics[width = 1.0 \linewidth, height = 0.7 \linewidth]{figure/experiments/effectiveness/top5.png}
-\caption{Visualization of 5 neurons that have the maximum scores in each of the top 5 channels selected by the FSP algorithm. Those 5 neurons express the most discriminative parts of the corresponding target objects in the input image. Best viewed in color.}
+\caption{Visualization of 5 neurons that have the maximum scores in each of the top 5 channels selected by the FSP algorithm. Those 5 neurons represent for the most discriminative parts of the corresponding target objects in the input image. Best viewed in color.}
 \label{fig:top 5}
 \end{figure}
 
-As shown in Fig.~\ref{fig:top 5}, the first input image contains persons, a bicycle and a car, and the FSP algorithm is run for the three classes.
+As shown in Fig.~\ref{fig:top 5}, the first input image contains persons, bicycles and a car, and the FSP algorithm is run for the three classes.
 After convergence, for each target, we rank the 512 channels of the ``conv5\_2" layer with their maximum scores and acquire the top 5 channels.
 Further, 5 neurons are selected that have the maximum activation scores in each of the top 5 channels.
 As illustrated in Fig.~\ref{fig:top 5}, the FR algorithm is run to visualize those 5 neurons selected by FSP, and it turns out that they represent the most discriminative parts of the corresponding objects.
-The similar results appear in another image with category person and bottle.
+Similar results appear in another image with category person and bottle.
 
 To make it more convincing, we evaluate these selected top 5 filters on the whole Pascal VOC2012 classification validation set which contains 1449 images.
 To avoid the underlying mutual influence, only 924 images with a single label are utilized, and these images are divided into 20 sets according to their labels.
-We calculate the maximum and mean responses of the top 5 filters with all images of 20 categories.
+We calculate the maximum and mean responses of the top 5 channels with all images of 20 categories.
 In Fig.~\ref{fig:effect}, the maximum and mean responses are presented in the first row and the second row respectively.
 We take the category ``person" as an example for detailed analysis.
-FSP is run for the category ``person" on the person-bike-car image until convergence, and top 5 filters are acquired.
+FSP is run for the category ``person" on a person-bike-car image until convergence, and top 5 channels are acquired.
 All images that are only labeled as person are fed to the original CNN model.
 The responses are drawn with the magenta line.
-Then, images of the other 19 classes are fed to the same CNN to get the corresponding responses of the top 5 filters.
+Then, images of other 19 classes are fed to the same CNN to get the corresponding responses of the top 5 channels.
 The responses for the category ``bicycle" and ``car" that appear in the image are plotted with the red and cyan line respectively, and the rest 17 classes are plotted with blue lines.
 
-In Fig.~\ref{fig:effect:b}, the fact that the magenta line is higher than the other lines indicates that the corresponding filters are highly related to its target category, which means the FSP algorithm can effectively select the meaningful filters.
+In Fig.~\ref{fig:effect:b}, the fact that the magenta line is higher than  other lines indicates that the corresponding channels are highly related to its target category, and the FSP algorithm can effectively select the meaningful filters.
 The results are similar for another image that contains persons and  bottles, as shown in Fig.~\ref{fig:effect:e}.
 We find that this kind of neuron selection happens in all hidden layers, based on which we can draw a conclusion that the FSP algorithm has the ability to correctly select the corresponding neurons (filters) to preset targets, as well as suppress irrelevant neurons at the same time.
+
 \begin{figure*}[!tp]
 \vspace{0mm}
 \centering
 \includegraphics[width = 1.0 \linewidth,height=0.4 \linewidth]{figure/experiments/distinguish/all.pdf}
-\caption{Visualization and energy maps. (a)(e)(i)(m) Input images. (b)(f)(j)(n) FSP-FR energy maps. (c)(g)(k)(o) Summation Energy Maps. (d)(h)(l)(p) Visualization maps. Note that (i-p) demonstrate some results when input images contain multi-class objects, and the Summation Energy Maps are generated by summation of all resized gradients of feature maps in all ReLU layers that behind convolutional layers. Best viewed in color.}
+\caption{Visualization and energy maps. (a) Input images. (b) FSP-FR energy maps. (c) Summation Energy Maps. (d) Visualization maps. (i-p) Some results when input images contain multi-class objects. Note that Summation Energy Maps are generated by summation of all resized gradients of feature maps in all convolutional layers. Best viewed in color.}
 \label{fig:energymap}
 \end{figure*}
 
 \subsection{Analysis on the Discriminative Ability of FSP}
-The FSP algorithm can produce highly discriminative energy maps, which is essential for real applications.
-To evaluate this discriminative ability of FSP, we conduct several experiments on the Pascal VOC2012 classification validation set.
+To evaluate the discriminative ability of FSP, we conduct several experiments on the Pascal VOC2012 classification validation set.
 The same VggNet in Sec 4.1 is employed, and Feedback CNN is utilized to generate category-specific energy maps.
 
 As a result, Fig.~\ref{fig:energymap} depicts several examples.
@@ -842,7 +835,7 @@ Due to the selection ability of the FSP algorithm, most of the neurons preserved
 Meanwhile, a whole object can be divided into several parts which may be expressed in several different hidden layers.
 Thus, it is reasonable to combine all the selected neurons to generate an new energy map.
 We achieve this simply by summation operations.
-After applying the FSP algorithm, we resize the gradients of feature maps in all ReLU layers that behind convolutional layers with the same size of the input image, and calculate the summation of all the resized gradient maps along the channel direction.
+After applying the FSP algorithm, we resize the gradients of feature maps in all convolutional layers of VggNet with the same size of the input image, and calculate the summation of all the resized gradient maps along the channel direction.
 The summation map is normalized by L2 norm, named as Summation Energy Map.
 Fig.~\ref{fig:energymap}(c), (g), (k) and (o) illustrate some results.
 As can be seen, the Summation Energy Maps have a better distributions over target objects.
@@ -851,7 +844,7 @@ As can be seen, the Summation Energy Maps have a better distributions over targe
 \vspace{0mm}
 \centering
 \includegraphics[height = 3.5cm,width = 1\linewidth]{figure/experiments/coverrate/all_diff.pdf}
-\caption{Coverage rates of Summation Energy Map over all 20 classes images of Pascal VOC2012. (left) Coverage rates of Summation Energy Maps. (right) Coverage rates of the energy maps generated by original gradients. Best viewed in color.}
+\caption{Coverage rate of Summation Energy Map over all 20 classes images of Pascal VOC2012. All coverage rates of Summation Energy Maps (left) is much higher than the energy maps generated by original gradients of the input images (right). Best viewed in color.}
 \label{fig:alldiff}
 \end{figure}
 
@@ -859,34 +852,34 @@ As can be seen, the Summation Energy Maps have a better distributions over targe
 \vspace{0mm}
 \centering
 \includegraphics[height = 3.5cm,width = 1\linewidth]{figure/experiments/coverrate/mul_diff.pdf}
-\caption{Coverage rates of Summation Energy Map of multi-class images of Pascal VOC2012. (left) Coverage rates of Summation Energy Maps. (right) Coverage rates of the energy maps generated by original gradients. Best viewed in color.}
+\caption{Coverage rate of Summation Energy Map of multi-class images of Pascal VOC2012. All coverage rates of Summation Energy maps (left) is much higher than the energy maps generated by original gradients of the input images (right). Best viewed in color.}
 \label{fig:muldiff}
 \end{figure}
 
-The Summation Energy Map integrates the information of the selected neurons in all hidden layers.
+The Summation Energy Map integrates the activation values of the selected neurons in all hidden layers.
 So it is more convincing that we evaluate the discriminative ability of FSP using Summation Energy Maps instead of FSP-FR energy maps.
 We calculate the Summation Energy Maps for each image of the Pascal VOC2012 segmentation validation set.
 As the data set provides ground-truth masks for each object in every image according to class labels, we calculate the sum of energy that falls into the target object regions, and we call this value as the coverage rate.
-The mean coverage rate is computed for each class on all provided validation images in Fig.~\ref{fig:alldiff} with blue curve.
-Specially, since the deconvolutional operation in back-propagation cause dilation of the edges in the energy maps, we further report the results of dilating the ground truth masks by 5 pixels and 10 pixels in Fig.~\ref{fig:alldiff} with green and red curves respectively.
-By contrast, the mean coverage rate of energy maps which depends on the original gradients of the input image is reported too.
-As can be seen, all coverage rates of Summation Energy Maps (left) is much higher than the energy maps generated by original gradients of the input images (right).
-That is, the Summation Energy Maps generated by FSP effectively highlight the expected objects and almost focus on the target area.
+The mean coverage rate is computed for each class on all provided validation images in Fig.~\ref{fig:alldiff}.
+Specially, since the deconvolutional operation in back-propagation causes dilation of the edges in the energy maps, we further report the results of dilating the ground truth masks by 5 pixels and 10 pixels in Fig.~\ref{fig:alldiff}.
+As a contrast, the mean coverage rate of energy maps which depends on the original gradients of the input image is reported too.
+As can be seen, the Summation Energy Maps generated by FSP effectively highlight the expected objects and focus on the target area.
 
-Particularly, to provide a more convincing evaluation of the discriminative ability of Summation Energy Map, we calculate the coverage rate only for images with multi-class labels in PASCAL VOC2012 segmentation validation set.
+Particularly, to provide a more convincing evaluation of the discriminative ability of Summation Energy Map, we calculate the coverage rate only for images with multi-class labels in PASCAL VOC2012 segmentation validation set, which has 257 images.
 The corresponding results are shown in Fig.~\ref{fig:muldiff}, demonstrating the effectiveness of FSP.
 
 These results indicate that the propose FSP algorithm has strong discriminative ability.
 Object-related neurons can be correctly selected by FSP and class-specific energy maps can also be effectively produced, which well paves the road for weakly supervised object localization and weakly-supervised semantic segmentation.
 
+
 \subsection{Weakly-supervised Object Localization}
 In this section, we evaluate the localization power of Feedback CNN on the ImageNet 2012 localization task.
 The top 5 localization evaluation metric~\cite{deepinside} is employed, in which an correct prediction is counted when one of the top 5 guesses meets the requirement that both object category prediction and its associated bounding box are correct.
-To generate top 5 category prediction, the VggNet pre-trained with the ImageNet 2012 classification training set is downloaded from Caffe~\cite{caffe} Model Zoo website.
+To generate top 5 category prediction, the VggNet pre-trained with the ImageNet 2012 classification training set is downloaded from Caffe~\cite{caffe} model zoo.
 For weakly supervised localization, several steps are performed to get a bounding box.
-We summarize the experimental procedures of weakly supervised object localization in Procedure 1.
+We summarize the experimental procedures of weakly supervised object localization in Algorithm 3.
 
-\begin{procedure}[!htb]
+\begin{algorithm}[htb]
 \caption{Experimental procedures of weakly supervised object localization}
 \label{alg:Framwork}
 \begin{algorithmic}[1]
@@ -900,7 +893,7 @@ We summarize the experimental procedures of weakly supervised object localizatio
 \State Set the preserved neurons in ``conv5\_2" as the targets, and run FR on those neurons simultaneously to get the final energy maps;
 \State Get a bounding box which preserves 99\% energy of the final energy map.
 \end{algorithmic}
-\end{procedure}
+\end{algorithm}
 
 \begin{table}[!htb]
 \small
@@ -911,16 +904,11 @@ We summarize the experimental procedures of weakly supervised object localizatio
 \caption{Localization results on ILSVRC2012.}
 \label{table:localization results}
 \centering
-\begin{tabular}{c| p{1.5cm}<{\centering} |p{1.5cm}<{\centering}}
+\begin{tabular}{c| p{1.5cm} |p{1.5cm}}
 \hline
 %\multirow{2}{*}{methods} & \multirow{2}{*}{Top5 classification error(\%)} &\multirow{2}{*}{Top5 localization error(\%)}\\
-%{methods\\} & {Top5 classification \\error} &{Top5 localization \\error}\\
-\multirow{2}{*}{methods}&{classification}&{localization}\\
-%\cline{2-3}
-& {top 5 error }&{top 5 error}\\
-%\tabincell{p{1cm}}{ } & {classification}&{localization}\\
-%\hline
-%\tabincell{p{1cm}}{ methods} & {top 5 error }&{top 5 error} \\
+%{methods\\} & {Top5 classification \\error(\%)} &{Top5 localization \\error(\%)}\\
+\tabincell{p{1cm}}{ methods} & {top 5 classification error(\%)}&{top 5 localization error(\%)}\\
 \hline
  {deepinside~\cite{deepinside}} & {-}&{44.6}  \\
  {VGGnet-GAP~\cite{zhou2015learning}} & {12.2}&{45.14}  \\
@@ -938,7 +926,7 @@ We summarize the experimental procedures of weakly supervised object localizatio
 \end{tabular}
 \end{table}
 
-In particular, as described in Procedure 1, objects are localized in two stages for the reason that the scale of objects may vary greatly between different input images.
+As described in Algorithm 3, objects are localized in two stages for the reason that the scale of objects may vary greatly between different input images.
 We first roughly localize the objects in Step 1-4 by running FSP.
 Then the precise localization of objects is obtained in Step 5-9 by combining FSP and FR.
 %Note that, the ``conv5\_2" layer is empirically selected as the target layer of FR for the best results.
@@ -946,18 +934,18 @@ Then the precise localization of objects is obtained in Step 5-9 by combining FS
 We compare the localization performance of Feedback CNN on the ILSVRC2012 validation set with several state-of-the-art methods in Table~\ref{table:localization results}.
 Different image cropping strategies, such as no cropping, 5 cropping, and dense cropping~\cite{vgg}, are employed to produce different classification accuracy.
 When both using VggNet, compared with the VGGnet-GAP in~\cite{zhou2015learning}, our method wins 5.01\% in terms of the accuracy of weakly supervised object localization.
-To avoid the influence of different classification performance of the compared models, we compare the localization accuracy when classification error rates are close.
-As illustrated in Table~\ref{table:localization results}, When our classification accuracy is 3.48\% (without cropping operation) and 0.75\% (with 5 cropping operations) lower than the compared approach VGGnet-GAP~\cite{zhou2015learning}, we still achieve 2.32\% and 3.42\% higher localization accuracy, respectively.
+To avoid the influence of different classification performance of the compared models (the correctness of feedback signals), we compare the localization accuracy when classification error rates are very close.
+As illustrated in Table~\ref{table:localization results}, when our classification accuracy is 3.48\% (without cropping operation) and 0.75\% (with 5 cropping operations) lower than the compared approach VGGnet-GAP~\cite{zhou2015learning}, we still achieve 2.32\% and 3.42\% higher localization accuracy, respectively.
 Moreover, when given ground truth labels, 36.50\% error rate is obtained, which is an accuracy of 2.2\% higher than the recent best-performing approach MWP~\cite{zhang2016top} under the same experimental set-up.
 
-Due to the powerful selection capability of FSP and the better object boundaries in energy maps, the proposed Feedback CNN outperforms the state-of-the-art approaches (VGGnet-GAP~\cite{zhou2015learning} and MWP~\cite{zhang2016top}).
+Due to the powerful selection capability of FSP and the better object boundaries in energy maps, the proposed Feedback CNN outperforms the compared approaches (VGGnet-GAP~\cite{zhou2015learning} and MWP~\cite{zhang2016top}).
 The energy maps generated by our Feedback CNN are more precise and contain more complete objects.
-Accordingly, the bounding boxes generated by our approach are more closely to the ground-truth bounding boxes. Fig.~\ref{fig:loc} displays some successful examples.
+Accordingly, the bounding boxes generated by our approach are  more close to the ground-truth bounding boxes. Fig.~\ref{fig:loc} displays some examples.
 \begin{figure}
 \setlength{\abovecaptionskip}{0pt}
 \includegraphics[width=1 \linewidth,height=0.4 \linewidth]{figure/experiments/localization/loc_results.pdf}
 \centering
-\caption{Examples of weakly supervised localization of our approach. Note that the predicted bounding boxes are plotted in red color.}
+\caption{Examples of weakly supervised localization of our approach. Note that red bounding boxes are predicted as one.}
 \label{fig:loc} %% label for entire figure
 \end{figure}
 
@@ -984,6 +972,8 @@ MIL+ILP+SP~\cite{segcvpr15} & 77.2 & 37.3 & 18.4 & 25.4 & 28.2 & 31.9 & 41.6 & 4
 \hline
 \bf ours &{\bf 81.1}&{\bf 62.1}&25.9 & {\bf 51.5} & {\bf 32.5} & {\bf 47.7} & {\bf 57.7} & {\bf 51.0} & {\bf 65.1} & {\bf 20.6} & {\bf 55.6} & 23.7 &	{\bf 54.5} & {\bf 54.6} & {\bf 57.3} & 38.5 & 27.2 & {\bf 65.9} & 31.2 & {\bf 50.7} & {\bf 40.3}&{\bf 47.4}\\
 \hline
+classification acc & &91.6&86.9 &86.8 & 85.4 & 71.7 & 83.1 & 78.8 & 91.0 & 70.4 & 83.6 & 78.6 & 83.3 & 86.9 & 88.9 & 87.9 & 68.3 & 83.3 & 71.7 & 96.5 & 77.9 & 82.6 \\
+\hline
 \end{tabular}
 \end{table*}
 
@@ -995,35 +985,36 @@ MIL+ILP+SP~\cite{segcvpr15} & 77.2 & 37.3 & 18.4 & 25.4 & 28.2 & 31.9 & 41.6 & 4
 \caption{Examples of weakly supervised semantic segmentation on the Pascal VOC2012 validation set. The first row are input images, the second row are ground truth, and the last row are our results.}
 \label{fig:goodseg}
 \end{figure*}
+
 \subsection{Weakly-supervised Semantic Segmentation}
 In this section, we focus on the weakly-supervised semantic segmentation task with experimental analysis on the Pascal VOC2012 semantic segmentation Challenge.
 We employ the standard Pascal VOC2012 segmentation metric: mean intersection-over-union (mIoU).
 Note that we only make use of class-level labels to fine-tune VggNet for classification on the Pascal VOC2012 segmentation training set, and evaluate our method on the Pascal VOC2012 semantic segmentation validation set (containing 1449 images).
 In the training phase, the input images are randomly cropped, mirrored, scaled and rotated to obtain a better model.
-As for the multi-label classification task, the loss function we adopt is the sigmoid cross entropy instead of soft-max.
+%As for the multi-label classification task, the loss function we adopt is the sigmoid cross entropy instead of soft-max.
 To segment objects from an input image based on the energy map, the saliency cut proposed in ~\cite{saliencycut} is utilized.
 
-Procedure 2 demonstrates the experimental procedure.
+Algorithm 4 describes the experimental procedure.
 In particular, distinct parts of an object may be expressed in different layers, and their information can be all integrated into the Summation Energy Maps, which makes the Summation Energy Maps suitable for the segmentation task.
 On the other hand, the FSP-FR energy maps can highlight object boundaries.
 Thus, we acquire both these energy maps for the target objects in an input image and simply add them together as the final energy map, which is called Summation-FSP-FR energy map.
-Specially, for the overlapped objects, the pixels of the overlapped regions are simply determined by their energy values in the corresponding Summation-FSP-FR energy maps.
-It should be noted that the deconvolutional operation in a CNN model in back-propagation process will cause offset in the energy map, which leads to dilation around object edges.
+For the overlapped objects, the pixels of the overlapped regions are simply determined by their energy values in the corresponding Summation-FSP-FR energy maps.
+It should be noted that the deconvolutional operation in a CNN model in back-propagation process will cause offset in the energy map, which leads to Halo Effect around object edges.
 Thus, we regularize the Summation-FSP-FR energy into the super-pixels generated by the method proposed in~\cite{dollar2015fast} to preserve objects' edge.
 
-\begin{procedure}[!htb]
+\begin{algorithm}[!htb]
 \caption{Experimental procedure of weakly supervised semantic segmentation}
 \label{alg:Framwork}
 \begin{algorithmic}[1]
 \State Given a test image and a predicted label by the trained VggNet;
   \State Run FSP according to the predicted label and obtain Summation Energy Map;
-  \State Select one of the middle-level layers (e.g., ``conv5\_2") as the target layer for FR, set preserved neurons as targets for FR algorithm, and run FR simultaneously to get the FSP-FR energy map;
+  \State Select ``conv5\_2" layer as the target layer for FR, set preserved neurons as targets for FR algorithm, and run FR simultaneously to get the FSP-FR energy map;
   \State Add Summation Energy Map and FSP-FR energy map to obtain Summation-FSP-FR energy map;
-  \State Get super-pixels by the algorithm proposed in ~\cite{dollar2015fast}, and let the energy value of each super-pixel be equal to the minimum Summation-FSP-FR energy value within that super-pixel;
+  \State Get super-pixels by the algorithm proposed in~\cite{dollar2015fast}, and let the energy value of each super-pixel be equal to the minimum Summation-FSP-FR energy value within that super-pixel;
  % \State Set pixels with energy value in Super-pixel energy map that lower than 20\% responses  as background, between 20\% and 70\%as probable background, between 70\% and 95\% as probable foreground, and higher than 95\% as foreground;
   \State Run the saliency cut to get the segmentation results.
 \end{algorithmic}
-\end{procedure}
+\end{algorithm}
 
 \begin{figure}[!htb]
 \vspace{0mm}
@@ -1040,6 +1031,7 @@ Fig.~\ref{fig:goodseg} illustrates some successful examples, where we find that 
 Also we show some failure cases and their corresponding objects' energy maps in Fig.~\ref{fig:badseg}.
 We observe that the energy maps are quite meaningful but the segmentation results are not satisfactory.
 The possible reason derives from the saliency cut~\cite{saliencycut}, which implies that our approach still has the potential to be improved.
+
 \section{Conclusion}
 In this paper, we have proposed the feedback CNN, in which pruning and recovering operations are introduced to implement feedback in deep Convolutional Neural Networks.
 Feedback CNN achieves the selectivity of neuron activations by jointly reasoning about the outputs of class nodes and the activations of hidden layer neurons.
@@ -1047,7 +1039,7 @@ It is capable of capturing high-level semantic concepts and projects information
 Qualitative and quantitative experimental results on ImageNet2012 and Pascal VOC2012 have demonstrated the effectiveness of the proposed Feedback CNN.
 
 Due to its importance in both human visual system and machine vision, the feedback mechanism deserves more attention.
-It still has much space to be further explored, e.g., exploiting neurons in representing multiple objects with the same category, which is critical for instance segmentation.
+It still has much space to be further improved, e.g., exploiting neurons in representing multiple objects with the same category, which is critical for instance segmentation.
 We believe that, with more study of the feedback mechanism, it is highly possible to promote the development in the fields of pattern recognition and computer vision.
 
 \bibliographystyle{IEEEtran}
